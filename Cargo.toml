@@ -2,6 +2,7 @@
 resolver = "3"
 members = [
     "crates/av-util",
+    "crates/av-codec",
     "crates/justav",
 ]
 

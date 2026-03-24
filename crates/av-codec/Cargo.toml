@@ -1,10 +1,11 @@
 [package]
-name = "justav"
+name = "av-codec"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Pure Rust multimedia toolkit"
+description = "Codec encoding/decoding framework for justav"
 
 [dependencies]
 av-util = { path = "../av-util" }
-av-codec = { path = "../av-codec" }
+
+[dev-dependencies]

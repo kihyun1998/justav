@@ -442,9 +442,12 @@ Nightly (매일):
 
 ---
 
-## Phase 1: Codec Core (av-codec)
+## Phase 1: Codec Core (av-codec) — DONE (FLAC 제외)
 
 > 목표: 인코딩/디코딩 프레임워크 + 첫 번째 코덱 (PCM, FLAC).
+>
+> **완료**: 11개 모듈, 68 tests. PCM 5종 encode/decode roundtrip 통과, SRT 자막 파싱 통과.
+> FLAC 디코더는 별도 이슈로 분리 (복잡도 높음).
 
 ### Step 1.1 — Packet & CodecParameters
 
@@ -991,7 +994,7 @@ Nightly (매일):
 | Phase | 산출물 | 핵심 검증 |
 |-------|--------|----------|
 | **0** | av-util 크레이트 | ~~단위 테스트 + miri 통과~~ **DONE** (299 tests) |
-| **1** | av-codec + PCM/FLAC/SRT | FLAC golden test + SRT 파싱 |
+| **1** | av-codec + PCM/FLAC/SRT | ~~FLAC golden test + SRT 파싱~~ **DONE** (68 tests, FLAC 별도) |
 | **2** | av-format + WAV/MKV | WAV roundtrip + MKV demux |
 | **3** | H.264, AAC, Opus, 자막 디코더 | PSNR ≥ 60dB, 자막 전 포맷 통과 |
 | **4** | MP4 (일반+fMP4) + E2E transcode | 출력 MP4 재생 가능 |
