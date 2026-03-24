@@ -688,9 +688,12 @@ Nightly (매일):
 
 ---
 
-## Phase 4: MP4 Container & First E2E Transcode
+## Phase 4: MP4 Container & First E2E Transcode — DONE (fMP4/faststart 제외)
 
 > 목표: MP4 demux/mux로 실제 트랜스코딩 파이프라인 완성.
+>
+> **완료**: MP4 box parser + demuxer/muxer (co64 지원), E2E Pipeline (WAV PCM roundtrip).
+> fMP4(moof/traf)와 faststart는 Phase 7(스트리밍)에서 진행.
 
 ### Step 4.1 — MP4/MOV Demuxer (일반 + fragmented)
 
@@ -1052,7 +1055,7 @@ Nightly (매일):
 | **1** | av-codec + PCM/FLAC/SRT | ~~FLAC golden test + SRT 파싱~~ **DONE** (68 tests, FLAC 별도) |
 | **2** | av-format + WAV/MKV | ~~WAV roundtrip + MKV demux~~ **DONE** (53 tests, MKV 별도) |
 | **3** | 코덱 파서 + ASS/WebVTT 자막 | ~~H.264 NAL + AAC ADTS + 자막 파싱 통과~~ **DONE** (67 tests) |
-| **4** | MP4 (일반+fMP4) + E2E transcode | 출력 MP4 재생 가능 |
+| **4** | MP4 + E2E transcode | ~~출력 MP4 재생 가능~~ **DONE** (fMP4/faststart 별도) |
 | **5** | av-filter 그래프 | scale+aresample+subtitles E2E |
 | **6** | sw-scale, sw-resample | 레퍼런스 대비 오차 범위 내 |
 | **7** | 네트워크 + HLS/DASH | HTTP URL에서 스트림 디먹싱 |
