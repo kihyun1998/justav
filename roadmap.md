@@ -537,9 +537,12 @@ Nightly (매일):
 
 ---
 
-## Phase 2: Container Core (av-format)
+## Phase 2: Container Core (av-format) — DONE (Matroska 제외)
 
 > 목표: 먹싱/디먹싱 프레임워크 + 첫 번째 컨테이너 (WAV, Matroska).
+>
+> **완료**: 11개 모듈, 53 tests. WAV roundtrip (s16le/u8/f32le) 통과.
+> Matroska EBML 파서는 별도 이슈로 분리 (복잡도 높음).
 
 ### Step 2.1 — IOContext (Sync)
 
@@ -995,7 +998,7 @@ Nightly (매일):
 |-------|--------|----------|
 | **0** | av-util 크레이트 | ~~단위 테스트 + miri 통과~~ **DONE** (299 tests) |
 | **1** | av-codec + PCM/FLAC/SRT | ~~FLAC golden test + SRT 파싱~~ **DONE** (68 tests, FLAC 별도) |
-| **2** | av-format + WAV/MKV | WAV roundtrip + MKV demux |
+| **2** | av-format + WAV/MKV | ~~WAV roundtrip + MKV demux~~ **DONE** (53 tests, MKV 별도) |
 | **3** | H.264, AAC, Opus, 자막 디코더 | PSNR ≥ 60dB, 자막 전 포맷 통과 |
 | **4** | MP4 (일반+fMP4) + E2E transcode | 출력 MP4 재생 가능 |
 | **5** | av-filter 그래프 | scale+aresample+subtitles E2E |

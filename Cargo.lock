@@ -10,6 +10,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "av-format"
+version = "0.1.0"
+dependencies = [
+ "av-codec",
+ "av-util",
+]
+
+[[package]]
 name = "av-util"
 version = "0.1.0"
 dependencies = [
@@ -28,6 +36,7 @@ name = "justav"
 version = "0.1.0"
 dependencies = [
  "av-codec",
+ "av-format",
  "av-util",
 ]
 
