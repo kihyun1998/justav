@@ -282,4 +282,35 @@ mod tests {
 
         assert!(pipeline.transcode(&mut input, &mut output, &[]).is_err());
     }
+
+    #[test]
+    fn e2e_mp4_codec_unsupported_fails_gracefully() {
+        // MP4 contains AAC, but AAC decoder is a stub (returns Unsupported).
+        // This verifies the pipeline fails gracefully, not panics.
+        // True MP4→MP4 E2E requires Phase 12 (full codec algorithms).
+        use av_format::formats::mp4::mux::Mp4Muxer;
+        use av_format::formats::mp4::demux::Mp4Demuxer;
+
+        let pipeline = Pipeline::with_defaults();
+
+        // Build a minimal MP4 with AAC data.
+        let mut mux_out = OutputContext::new(IOContext::memory_writer(), Box::new(Mp4Muxer::new()));
+        let mut params = CodecParameters::new_audio(av_codec::codec::CodecId::Aac, 44100, 2).unwrap();
+        params.codec_id = av_codec::codec::CodecId::Aac;
+        let mut s = av_format::stream::Stream::new(0, params);
+        s.time_base = av_util::rational::Rational::new(1, 44100);
+        mux_out.add_stream(s);
+        mux_out.write_header().unwrap();
+        let mut pkt = av_codec::packet::Packet::new(av_util::buffer::Buffer::from_vec(vec![0; 100]));
+        pkt.duration = Some(1024);
+        mux_out.write_packet(&pkt).unwrap();
+        mux_out.write_trailer().unwrap();
+        let mp4_data = mux_out.into_io().into_vec().unwrap();
+
+        // Try to transcode — should fail on decoder open (stub).
+        let mut input = InputContext::new(IOContext::from_memory(mp4_data), Box::new(Mp4Demuxer::new()));
+        let mut output = OutputContext::new(IOContext::memory_writer(), Box::new(Mp4Muxer::new()));
+        let result = pipeline.transcode(&mut input, &mut output, &[av_codec::codec::CodecId::Aac]);
+        assert!(result.is_err(), "stub decoder should fail on open");
+    }
 }
