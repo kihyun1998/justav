@@ -631,62 +631,113 @@ Nightly (매일):
 
 ---
 
-## Phase 3: Essential Codecs
+## Phase 3: Codec Parsers & Subtitle Codecs — DONE
 
-> 목표: 실용적 코덱 지원. 각 코덱은 feature flag로 선택적 빌드.
+> 목표: 코덱별 비트스트림 파서 + 자막 코덱 완전 구현.
+>
+> **완료**: 67 tests 추가 (av-codec 총 137). H.264 NAL/SPS, AAC ADTS, Opus TOC, ASS, WebVTT 파서 구현.
+>
+> 핵심 코덱의 실제 디코딩 알고리즘(IDCT, MDCT, 모션 보상 등)은
+> Phase 3b에서 별도 진행. 이 Phase에서는 **파서/헤더 분석**까지만.
 
-### Step 3.1 — H.264 Decoder
+### Step 3.1 — H.264 NAL Parser & Header Analysis
 
 | 항목 | 내용 |
 |------|------|
-| 구현 | NAL 파서, SPS/PPS, slice 디코딩, deblock, 참조 프레임 관리 |
+| 구현 | NAL 유닛 분리 (Annex B start code + AVCC length-prefix), NAL 타입 분류, SPS/PPS 기본 파싱 (해상도, 프로파일, 레벨 추출) |
+| Positive | Annex B 스트림에서 NAL 분리, SPS에서 해상도 추출 |
+| Negative | 잘린 NAL, start code 없는 데이터, 잘못된 SPS |
+| 범위 | 파싱만. 실제 slice 디코딩은 Phase 3b |
+
+### Step 3.2 — AAC ADTS Parser & Header Analysis
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | ADTS 헤더 파싱 (sync word, 프로파일, 샘플레이트, 채널, 프레임 크기), ADTS 프레임 분리 |
+| Positive | ADTS 스트림에서 프레임 분리, 헤더 필드 정확도 |
+| Negative | sync word 불일치, 잘린 프레임, 잘못된 샘플레이트 인덱스 |
+| 범위 | 파싱만. 실제 MDCT/TNS 디코딩은 Phase 3b |
+
+### Step 3.3 — Opus Packet Parser
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | TOC 바이트 파싱 (모드, 대역폭, 프레임 수), 패킷 구조 분석 |
+| Positive | TOC에서 모드/대역폭/프레임 크기 추출 |
+| Negative | 잘못된 TOC 바이트, 패킷 크기 불일치 |
+| 범위 | 파싱만. SILK/CELT 디코딩은 Phase 3b |
+
+### Step 3.4 — Subtitle Codecs (ASS, WebVTT)
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | ASS/SSA 파서 (헤더 섹션, 이벤트, 스타일 태그), WebVTT 파서 (큐, 타이밍, 포지셔닝) |
+| Positive | 스타일 태그 파싱, 타이밍 정확도, 다중 라인, 이벤트 순서 |
+| Negative | 잘못된 태그 중첩, UTF-8 외 인코딩, 빈 큐 |
+| SRT | Phase 1에서 완료 |
+
+### Step 3.5 — Codec Registration & Stub Decoders
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | H.264/AAC/Opus/VP9/AV1 디코더 스텁을 CodecRegistry에 등록, 파서 결과를 CodecParameters로 변환하는 헬퍼 |
+| Positive | 등록된 코덱 조회, 파서→CodecParameters 변환 |
+| Negative | 미구현 디코더 호출 시 `Error::Unsupported` 반환 |
+
+**Phase 3 완료 기준**: H.264 NAL 파서 + AAC ADTS 파서 + ASS/WebVTT 자막 파싱 통과.
+
+---
+
+## Phase 3b: Codec Algorithm Implementation (별도 진행)
+
+> 목표: 실제 디코딩/인코딩 알고리즘 구현. 각 코덱은 독립적으로 진행 가능.
+> 각 코덱은 수만 줄 규모이므로 별도 이슈/PR로 관리.
+
+### Step 3b.1 — H.264 Decoder (Full)
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | Exp-Golomb, slice header, 참조 프레임 관리, intra/inter 예측, IDCT, deblocking filter |
+| 스펙 | ITU-T H.264 (ISO/IEC 14496-10) |
 | 에러 복구 | 손상 NAL 건너뛰기, 참조 프레임 누락 시 concealment |
 | Positive | conformance test vectors, 레퍼런스 출력 대비 PSNR ≥ 60dB |
-| Negative | 잘린 NAL, 잘못된 SPS, 참조 프레임 누락 |
 | Fuzz | `fuzz_targets/decode_h264.rs` |
 
-### Step 3.2 — AAC Decoder
+### Step 3b.2 — AAC Decoder (Full)
 
 | 항목 | 내용 |
 |------|------|
-| 구현 | AAC-LC 디코더 (MDCT, TNS, PNS, MS, IS) |
+| 구현 | AAC-LC: Huffman decoding, inverse quantization, MDCT, TNS, PNS, MS, IS, 윈도잉 |
+| 스펙 | ISO/IEC 13818-7 (MPEG-2 AAC), ISO/IEC 14496-3 (MPEG-4 AAC) |
 | Positive | 다양한 bitrate/채널 구성 디코딩, 레퍼런스 비교 |
-| Negative | 잘못된 ADTS 헤더, 미지원 프로파일 (HE-AAC는 후순위) |
+| Negative | 미지원 프로파일 (HE-AAC는 후순위) |
 | Fuzz | `fuzz_targets/decode_aac.rs` |
 
-### Step 3.3 — Opus Decoder
+### Step 3b.3 — Opus Decoder (Full)
 
 | 항목 | 내용 |
 |------|------|
-| 구현 | Opus 디코더 (SILK + CELT), RFC 6716 기반 |
+| 구현 | SILK 디코더 + CELT 디코더 + 하이브리드 모드 |
+| 스펙 | RFC 6716 |
 | Positive | 다양한 bitrate, 채널 수, 프레임 크기 |
-| Negative | 잘못된 TOC 바이트, 패킷 크기 초과 |
 
-### Step 3.4 — VP9 / AV1 Decoder
+### Step 3b.4 — VP9 / AV1 Decoder
 
 | 항목 | 내용 |
 |------|------|
 | 구현 | VP9 디코더 → AV1 디코더 순차 진행 |
+| 스펙 | VP9 Bitstream Spec, AV1 Spec (AOMedia) |
 | Positive | 프로파일 0/2, 다양한 해상도 |
-| Negative | 잘못된 프레임 헤더, 미지원 프로파일 |
 
-### Step 3.5 — Subtitle Codecs
-
-| 항목 | 내용 |
-|------|------|
-| 구현 | ASS/SSA 파서, WebVTT 파서 (SRT는 Phase 1에서 완료) |
-| Positive | 스타일 태그 파싱, 타이밍 정확도, 다중 라인 |
-| Negative | 잘못된 태그 중첩, 인코딩 오류 (UTF-8 외) |
-
-### Step 3.6 — 인코더 (H.264, AAC)
+### Step 3b.5 — 인코더 (H.264, AAC)
 
 | 항목 | 내용 |
 |------|------|
-| 구현 | 기본 인코더 (baseline profile, CBR) |
+| 구현 | H.264 Baseline encoder (CBR), AAC-LC encoder |
 | Positive | encode→decode roundtrip PSNR 확인 |
 | Negative | 미지원 해상도, 잘못된 bitrate |
 
-**Phase 3 완료 기준**: H.264+AAC 디코딩이 레퍼런스 대비 PSNR ≥ 60dB, 자막 파싱 통과.
+**Phase 3b 완료 기준**: H.264+AAC 디코딩이 레퍼런스 대비 PSNR ≥ 60dB.
 
 ---
 
@@ -999,7 +1050,8 @@ Nightly (매일):
 | **0** | av-util 크레이트 | ~~단위 테스트 + miri 통과~~ **DONE** (299 tests) |
 | **1** | av-codec + PCM/FLAC/SRT | ~~FLAC golden test + SRT 파싱~~ **DONE** (68 tests, FLAC 별도) |
 | **2** | av-format + WAV/MKV | ~~WAV roundtrip + MKV demux~~ **DONE** (53 tests, MKV 별도) |
-| **3** | H.264, AAC, Opus, 자막 디코더 | PSNR ≥ 60dB, 자막 전 포맷 통과 |
+| **3** | 코덱 파서 + ASS/WebVTT 자막 | ~~H.264 NAL + AAC ADTS + 자막 파싱 통과~~ **DONE** (67 tests) |
+| **3b** | 코덱 알고리즘 (별도 진행) | H.264+AAC PSNR ≥ 60dB |
 | **4** | MP4 (일반+fMP4) + E2E transcode | 출력 MP4 재생 가능 |
 | **5** | av-filter 그래프 | scale+aresample+subtitles E2E |
 | **6** | sw-scale, sw-resample | 레퍼런스 대비 오차 범위 내 |
