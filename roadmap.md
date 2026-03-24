@@ -688,59 +688,6 @@ Nightly (매일):
 
 ---
 
-## Phase 3b: Codec Algorithm Implementation (별도 진행)
-
-> 목표: 실제 디코딩/인코딩 알고리즘 구현. 각 코덱은 독립적으로 진행 가능.
-> 각 코덱은 수만 줄 규모이므로 별도 이슈/PR로 관리.
-
-### Step 3b.1 — H.264 Decoder (Full)
-
-| 항목 | 내용 |
-|------|------|
-| 구현 | Exp-Golomb, slice header, 참조 프레임 관리, intra/inter 예측, IDCT, deblocking filter |
-| 스펙 | ITU-T H.264 (ISO/IEC 14496-10) |
-| 에러 복구 | 손상 NAL 건너뛰기, 참조 프레임 누락 시 concealment |
-| Positive | conformance test vectors, 레퍼런스 출력 대비 PSNR ≥ 60dB |
-| Fuzz | `fuzz_targets/decode_h264.rs` |
-
-### Step 3b.2 — AAC Decoder (Full)
-
-| 항목 | 내용 |
-|------|------|
-| 구현 | AAC-LC: Huffman decoding, inverse quantization, MDCT, TNS, PNS, MS, IS, 윈도잉 |
-| 스펙 | ISO/IEC 13818-7 (MPEG-2 AAC), ISO/IEC 14496-3 (MPEG-4 AAC) |
-| Positive | 다양한 bitrate/채널 구성 디코딩, 레퍼런스 비교 |
-| Negative | 미지원 프로파일 (HE-AAC는 후순위) |
-| Fuzz | `fuzz_targets/decode_aac.rs` |
-
-### Step 3b.3 — Opus Decoder (Full)
-
-| 항목 | 내용 |
-|------|------|
-| 구현 | SILK 디코더 + CELT 디코더 + 하이브리드 모드 |
-| 스펙 | RFC 6716 |
-| Positive | 다양한 bitrate, 채널 수, 프레임 크기 |
-
-### Step 3b.4 — VP9 / AV1 Decoder
-
-| 항목 | 내용 |
-|------|------|
-| 구현 | VP9 디코더 → AV1 디코더 순차 진행 |
-| 스펙 | VP9 Bitstream Spec, AV1 Spec (AOMedia) |
-| Positive | 프로파일 0/2, 다양한 해상도 |
-
-### Step 3b.5 — 인코더 (H.264, AAC)
-
-| 항목 | 내용 |
-|------|------|
-| 구현 | H.264 Baseline encoder (CBR), AAC-LC encoder |
-| Positive | encode→decode roundtrip PSNR 확인 |
-| Negative | 미지원 해상도, 잘못된 bitrate |
-
-**Phase 3b 완료 기준**: H.264+AAC 디코딩이 레퍼런스 대비 PSNR ≥ 60dB.
-
----
-
 ## Phase 4: MP4 Container & First E2E Transcode
 
 > 목표: MP4 demux/mux로 실제 트랜스코딩 파이프라인 완성.
@@ -1043,6 +990,60 @@ Nightly (매일):
 
 ---
 
+## Phase 12: Codec Algorithm Implementation (전체 프레임워크 완성 후 진행)
+
+> 목표: 실제 디코딩/인코딩 알고리즘 구현. 각 코덱은 독립적으로 진행 가능.
+> Phase 4~11의 프레임워크(파이프라인, 필터, 스케일링, CLI 등)가 완성된 후 진행.
+> 각 코덱은 수만 줄 규모이므로 별도 이슈/PR로 관리.
+
+### Step 12.1 — H.264 Decoder (Full)
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | Exp-Golomb, slice header, 참조 프레임 관리, intra/inter 예측, IDCT, deblocking filter |
+| 스펙 | ITU-T H.264 (ISO/IEC 14496-10) |
+| 에러 복구 | 손상 NAL 건너뛰기, 참조 프레임 누락 시 concealment |
+| Positive | conformance test vectors, 레퍼런스 출력 대비 PSNR ≥ 60dB |
+| Fuzz | `fuzz_targets/decode_h264.rs` |
+
+### Step 12.2 — AAC Decoder (Full)
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | AAC-LC: Huffman decoding, inverse quantization, MDCT, TNS, PNS, MS, IS, 윈도잉 |
+| 스펙 | ISO/IEC 13818-7 (MPEG-2 AAC), ISO/IEC 14496-3 (MPEG-4 AAC) |
+| Positive | 다양한 bitrate/채널 구성 디코딩, 레퍼런스 비교 |
+| Negative | 미지원 프로파일 (HE-AAC는 후순위) |
+| Fuzz | `fuzz_targets/decode_aac.rs` |
+
+### Step 12.3 — Opus Decoder (Full)
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | SILK 디코더 + CELT 디코더 + 하이브리드 모드 |
+| 스펙 | RFC 6716 |
+| Positive | 다양한 bitrate, 채널 수, 프레임 크기 |
+
+### Step 12.4 — VP9 / AV1 Decoder
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | VP9 디코더 → AV1 디코더 순차 진행 |
+| 스펙 | VP9 Bitstream Spec, AV1 Spec (AOMedia) |
+| Positive | 프로파일 0/2, 다양한 해상도 |
+
+### Step 12.5 — 인코더 (H.264, AAC)
+
+| 항목 | 내용 |
+|------|------|
+| 구현 | H.264 Baseline encoder (CBR), AAC-LC encoder |
+| Positive | encode→decode roundtrip PSNR 확인 |
+| Negative | 미지원 해상도, 잘못된 bitrate |
+
+**Phase 12 완료 기준**: H.264+AAC 디코딩이 레퍼런스 대비 PSNR ≥ 60dB.
+
+---
+
 ## Milestone Summary
 
 | Phase | 산출물 | 핵심 검증 |
@@ -1051,7 +1052,6 @@ Nightly (매일):
 | **1** | av-codec + PCM/FLAC/SRT | ~~FLAC golden test + SRT 파싱~~ **DONE** (68 tests, FLAC 별도) |
 | **2** | av-format + WAV/MKV | ~~WAV roundtrip + MKV demux~~ **DONE** (53 tests, MKV 별도) |
 | **3** | 코덱 파서 + ASS/WebVTT 자막 | ~~H.264 NAL + AAC ADTS + 자막 파싱 통과~~ **DONE** (67 tests) |
-| **3b** | 코덱 알고리즘 (별도 진행) | H.264+AAC PSNR ≥ 60dB |
 | **4** | MP4 (일반+fMP4) + E2E transcode | 출력 MP4 재생 가능 |
 | **5** | av-filter 그래프 | scale+aresample+subtitles E2E |
 | **6** | sw-scale, sw-resample | 레퍼런스 대비 오차 범위 내 |
@@ -1060,3 +1060,4 @@ Nightly (매일):
 | **9** | SIMD, threading, HW 가속 | 레퍼런스 대비 ≥ 80% 성능 |
 | **10** | av-device | 카메라+마이크 캡처 E2E |
 | **11** | CLI 도구 + docs | 사용자 배포 가능 |
+| **12** | 코덱 알고리즘 (H.264/AAC/Opus/VP9/AV1) | H.264+AAC PSNR ≥ 60dB |
