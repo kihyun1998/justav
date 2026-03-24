@@ -1,0 +1,12 @@
+[package]
+name = "av-util"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Core utilities for justav multimedia toolkit"
+
+[dependencies]
+tracing = "0.1"
+
+[dev-dependencies]
+tracing-subscriber = "0.3"
